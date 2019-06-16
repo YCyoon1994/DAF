@@ -348,7 +348,7 @@ int selectRoot()
 
         int numInitCand = end - mid;
 
-        rank = (numInitCand * numInitCand)/(double)(degree);
+        rank = (numInitCand)/(double)(degree);
 
         if( rank < rootRank ) {
             root = i;
