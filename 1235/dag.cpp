@@ -87,12 +87,10 @@ void buildDAG()
 
     //BFS traversal using queue
     while(true) {
-
-        // stable_sort(queue + currQueueStart, queue + currQueueEnd, sortByLabelFreqQuery);
-        
+	stable_sort(queue + currQueueStart, queue + currQueueEnd, sortByBFS);
         stable_sort(queue + currQueueStart, queue + currQueueEnd, sortByDegreeQuery);
-		stable_sort(queue + currQueueStart, queue + currQueueEnd, sortByBFS);
-        
+        stable_sort(queue + currQueueStart, queue + currQueueEnd, sortByLabelFreqQuery);
+        //stable_sort(queue + currQueueStart, queue + currQueueEnd, sortByBFS);
 
         while( currQueueStart != currQueueEnd ) {
             int currNode = queue[ currQueueStart ];
@@ -104,7 +102,7 @@ void buildDAG()
                 int childNode = adjListQuery[i];
                 if(popped[childNode] == 0) {
                     dagChildQuery[currNode][ dagChildQuerySize[currNode] ] = childNode;
-                    dagParentQuery[childNode][ dagParentQuerySize[childNode] ] = currNode;  
+                    dagParentQuery[childNode][ dagParentQuerySize[childNode] ] = currNode;
 
                     ++dagChildQuerySize[currNode];
                     ++dagParentQuerySize[childNode];
@@ -281,7 +279,7 @@ bool sortByLabel(int aNode1, int aNode2)
 
 bool sortByBFS(int aNode1, int aNode2)
 {
-    return (BFSdeepQuery[aNode1] < BFSdeepQuery[aNode2]);
+    return (BFSdeepQuery[aNode1] > BFSdeepQuery[aNode2]);
 }
 
 bool sortByDegreeQuery(int aNode1, int aNode2)
