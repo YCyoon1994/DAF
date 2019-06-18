@@ -27,6 +27,7 @@ bool sortByDegreeData(int, int);
 bool sortByLabel(int, int);
 bool sortByDegreeQuery(int, int);
 bool sortByLabelFreqQuery(int, int);
+bool sortByRankQuery(int, int);
 int binaryLowerBound(int, int, int);
 
 extern int numQueryNode;

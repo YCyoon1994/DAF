@@ -31,6 +31,40 @@ int* dagChildQuerySize = NULL; //dagChildQuerySize[i]: the number of children of
 int* dagParentQuerySize = NULL; //dagParentQuerySize[i]: the number of parent on node i
 
 
+
+void swap (int *queue, int a, int b)
+{
+    int temp = queue[a];
+    queue[a] = queue[b];
+    queue[b] = temp;
+}
+int check_rooted(int* queue)
+{
+    int visited[40];
+    for(int i = 0; i < 40; i++)
+        visited[i]= 0;
+    for(int i = 0; i < 40; i++){
+        int templabel = queue[i];
+        if(i != 0 && visited[templabel] == 0){
+            //cout << "False query at "<<i << "\n";
+            return 0;
+        }
+        for(int adj = adjIndexQuery[templabel]; adj < adjIndexQuery[templabel + 1]; ++adj){
+               int childNode = adjListQuery[adj];
+               visited[childNode] = 1;
+        }
+    }
+    return 1;
+}
+void print_queue(int* queue)
+{
+    for(int i = 0; i < 39; i++){
+        cout << queue[i]<<" ";
+    }
+    cout << queue[39]<<"\n";
+}
+
+
 void buildDAG()
 {
 //////////////////
@@ -91,7 +125,7 @@ void buildDAG()
             int currNode = queue[ currQueueStart ];
             ++currQueueStart;
             popped[currNode] = 1;
-            cout << currNode << " ";
+           // cout << currNode << " ";
 
             for(int i = adjIndexQuery[currNode]; i < adjIndexQuery[currNode + 1]; ++i) {
                 int childNode = adjListQuery[i];
@@ -116,7 +150,21 @@ void buildDAG()
         currQueueStart = currQueueEnd;
         currQueueEnd = nextQueueEnd;
     }
-    cout << endl;
+    //cout << endl;
+
+
+    swap(queue, 38, 39);
+    print_queue(queue);
+/*    
+    if(check_rooted(queue))
+        print_queue(queue);
+    else{
+        swap(queue, 38, 39);
+        print_queue(queue);
+    }
+  */  
+
+
     delete[] popped;
     delete[] visited;
     delete[] queue;
