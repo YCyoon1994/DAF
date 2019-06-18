@@ -85,8 +85,8 @@ void buildDAG()
 
     //BFS traversal using queue
     while(true) {
-        stable_sort(queue + currQueueStart, queue + currQueueEnd, sortByDegreeQuery);
         stable_sort(queue + currQueueStart, queue + currQueueEnd, sortByLabelFreqQuery);
+        stable_sort(queue + currQueueStart, queue + currQueueEnd, sortByDegreeQuery);
         while( currQueueStart != currQueueEnd ) {
             int currNode = queue[ currQueueStart ];
             ++currQueueStart;

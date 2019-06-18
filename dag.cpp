@@ -23,13 +23,46 @@ int* labelQuery = NULL;
 int* degreeQuery = NULL;
 int* adjListQuery = NULL;
 int* adjIndexQuery = NULL;
-int* rankQuery = NULL;
 
 //Variables for query DAG
 int** dagChildQuery = NULL; //dagChildQuery[i]: children of node i
 int** dagParentQuery = NULL; //dagParentQuery[i]: parent of node i
 int* dagChildQuerySize = NULL; //dagChildQuerySize[i]: the number of children of node i
 int* dagParentQuerySize = NULL; //dagParentQuerySize[i]: the number of parent on node i
+
+
+
+void swap (int *queue, int a, int b)
+{
+    int temp = queue[a];
+    queue[a] = queue[b];
+    queue[b] = temp;
+}
+int check_rooted(int* queue)
+{
+    int visited[40];
+    for(int i = 0; i < 40; i++)
+        visited[i]= 0;
+    for(int i = 0; i < 40; i++){
+        int templabel = queue[i];
+        if(i != 0 && visited[templabel] == 0){
+            //cout << "False query at "<<i << "\n";
+            return 0;
+        }
+        for(int adj = adjIndexQuery[templabel]; adj < adjIndexQuery[templabel + 1]; ++adj){
+               int childNode = adjListQuery[adj];
+               visited[childNode] = 1;
+        }
+    }
+    return 1;
+}
+void print_queue(int* queue)
+{
+    for(int i = 0; i < 39; i++){
+        cout << queue[i]<<" ";
+    }
+    cout << queue[39]<<"\n";
+}
 
 
 void buildDAG()
@@ -86,14 +119,13 @@ void buildDAG()
 
     //BFS traversal using queue
     while(true) {
-        //stable_sort(queue + currQueueStart, queue + currQueueEnd, sortByDegreeQuery);
-        //stable_sort(queue + currQueueStart, queue + currQueueEnd, sortByLabelFreqQuery);
-        stable_sort(queue + currQueueStart, queue + currQueueEnd, sortByRankQuery);
+        stable_sort(queue + currQueueStart, queue + currQueueEnd, sortByDegreeQuery);
+        stable_sort(queue + currQueueStart, queue + currQueueEnd, sortByLabelFreqQuery);
         while( currQueueStart != currQueueEnd ) {
             int currNode = queue[ currQueueStart ];
             ++currQueueStart;
             popped[currNode] = 1;
-            cout << currNode << " ";
+           // cout << currNode << " ";
 
             for(int i = adjIndexQuery[currNode]; i < adjIndexQuery[currNode + 1]; ++i) {
                 int childNode = adjListQuery[i];
@@ -118,7 +150,21 @@ void buildDAG()
         currQueueStart = currQueueEnd;
         currQueueEnd = nextQueueEnd;
     }
-    cout << endl;
+    //cout << endl;
+
+
+    swap(queue, 38, 39);
+   // print_queue(queue);
+    
+    if(check_rooted(queue))
+        print_queue(queue);
+    else{
+        swap(queue, 38, 39);
+        print_queue(queue);
+    }
+    
+
+
     delete[] popped;
     delete[] visited;
     delete[] queue;
@@ -287,11 +333,6 @@ bool sortByLabelFreqQuery(int aNode1, int aNode2)
     return (labelFrequency[label1] < labelFrequency[label2]);
 }
 
-bool sortByRankQuery(int aNode1, int aNode2)
-{
-    return (rankQuery[aNode1] > rankQuery[aNode2]);
-}
-
 //read one query graph
 void readQueryGraph(ifstream& aInFile, int aSumDegree) 
 {
@@ -307,8 +348,6 @@ void readQueryGraph(ifstream& aInFile, int aSumDegree)
         adjListQuery = new int[aSumDegree];
         sumQueryDegree = aSumDegree;
     }
-    if( rankQuery == NULL)
-        rankQuery = new int[numQueryNode];
 
     //(re)allocate memory for adjacency list of query graph
     if( sumQueryDegree < aSumDegree ) {
@@ -350,15 +389,14 @@ int selectRoot()
     for (int i = 0; i < numQueryNode; ++i) {
         label = labelQuery[i];
         degree = degreeQuery[i];
-         
+        
         int start = idxSortedData[label];
         int end = idxSortedData[label + 1];
         int mid = binaryLowerBound(start, end - 1, degree);
 
         int numInitCand = end - mid;
 
-        rank = (numInitCand * numInitCand)/(double)(degree);
-        rankQuery[i] = rank;
+        rank = numInitCand/(double)degree;
 
         if( rank < rootRank ) {
             root = i;
@@ -400,8 +438,6 @@ void clearMemory()
         delete[] renamedLabel;
     if(labelQuery != NULL)
         delete[] labelQuery;
-    if(rankQuery != NULL)
-        delete[] rankQuery;
     if(degreeQuery != NULL)
         delete[] degreeQuery;
     if(adjListQuery != NULL)

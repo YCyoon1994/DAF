@@ -8,7 +8,7 @@
 //Variables for data graph
 int numDataNode = 0;
 int numLabel = 0;
-int* labelData = NULL; //labelData[i] contains label of vertex i
+int* labelData = NULL; //labelData[i] contains label of vertex i //labelData[i] contains label of vertex i
 int* degreeData = NULL; //degreeData[i] contains degree of vertex i
 int* sortedData = NULL; //sortedData contains V in sorted order first by label frequency and second by degree
 int* idxSortedData = NULL; //idxSortedData[l] contains the last index in sortedData such that labelData[sortedData[index]] is l
@@ -23,6 +23,8 @@ int* labelQuery = NULL;
 int* degreeQuery = NULL;
 int* adjListQuery = NULL;
 int* adjIndexQuery = NULL;
+
+int* BFSdeepQuery = NULL;
 
 //Variables for query DAG
 int** dagChildQuery = NULL; //dagChildQuery[i]: children of node i
@@ -59,7 +61,7 @@ void buildDAG()
             dagChildQuery[i] = NULL;
         }
         dagChildQuery[i] = new int[degreeQuery[i]];
-        
+
         if( dagParentQuery[i] != NULL ) {
             delete[] dagParentQuery[i];
             dagParentQuery[i] = NULL;
@@ -85,8 +87,11 @@ void buildDAG()
 
     //BFS traversal using queue
     while(true) {
+        stable_sort(queue + currQueueStart, queue + currQueueEnd, sortByBFS);
         stable_sort(queue + currQueueStart, queue + currQueueEnd, sortByDegreeQuery);
         stable_sort(queue + currQueueStart, queue + currQueueEnd, sortByLabelFreqQuery);
+
+
         while( currQueueStart != currQueueEnd ) {
             int currNode = queue[ currQueueStart ];
             ++currQueueStart;
@@ -272,6 +277,11 @@ bool sortByLabel(int aNode1, int aNode2)
     return (labelData[aNode1] < labelData[aNode2]);
 }
 
+bool sortByBFS(int aNode1, int aNode2)
+{
+    return (BFSdeepQuery[aNode1] < BFSdeepQuery[aNode2]);
+}
+
 bool sortByDegreeQuery(int aNode1, int aNode2)
 {
     return (degreeQuery[aNode1] > degreeQuery[aNode2]);
@@ -286,7 +296,7 @@ bool sortByLabelFreqQuery(int aNode1, int aNode2)
 }
 
 //read one query graph
-void readQueryGraph(ifstream& aInFile, int aSumDegree) 
+void readQueryGraph(ifstream& aInFile, int aSumDegree)
 {
 //////////////////
     //allocate memory
@@ -296,10 +306,15 @@ void readQueryGraph(ifstream& aInFile, int aSumDegree)
         degreeQuery = new int[numQueryNode];
     if( adjIndexQuery == NULL )
         adjIndexQuery = new int[numQueryNode + 1];
+    if( BFSdeepQuery == NULL ) {
+        BFSdeepQuery = new int[numQueryNode];
+    }
     if( adjListQuery == NULL ) {
         adjListQuery = new int[aSumDegree];
         sumQueryDegree = aSumDegree;
     }
+
+
 
     //(re)allocate memory for adjacency list of query graph
     if( sumQueryDegree < aSumDegree ) {
@@ -307,7 +322,7 @@ void readQueryGraph(ifstream& aInFile, int aSumDegree)
             delete[] adjListQuery;
             adjListQuery = NULL;
         }
-        
+
         adjListQuery = new int[aSumDegree];
         sumQueryDegree = aSumDegree;
     }
@@ -315,6 +330,7 @@ void readQueryGraph(ifstream& aInFile, int aSumDegree)
     //read query graph
     int index = 0;
     adjIndexQuery[0] = index;
+    vector<int> BFSgraphQuery[numQueryNode];
     for(int i = 0; i < numQueryNode; ++i) {
         int id;
         int label;
@@ -323,13 +339,50 @@ void readQueryGraph(ifstream& aInFile, int aSumDegree)
         labelQuery[i] = renamedLabel[label];
         degreeQuery[i] = degree;
         for(int j = 0; j < degree; ++j) {
-            aInFile >> adjListQuery[index];
+            int k = 0;
+            aInFile >> k;
+            adjListQuery[index] = k;
+            BFSgraphQuery[id].push_back(k);
             ++index;
         }
         adjIndexQuery[i + 1] = index;
     }
+    for(int j = 0 ; j < numQueryNode ; ++j){
+      BFSdeepQuery[j] = getBFSdepth(BFSgraphQuery,numQueryNode,j);
+    }
 }
+int getBFSdepth(vector<int> Graph[], int numNode, int roots){
 
+  int levels[numNode];
+  bool marked[numNode];
+
+  queue<int> que;
+
+  que.push(roots);
+  levels[roots] = 0;
+  marked[roots] = true;
+
+  while (!que.empty()) {
+        roots = que.front();
+        que.pop();
+        for (int i = 0; i < Graph[roots].size(); i++) {
+            // b is neighbor of node x
+            int b = Graph[roots][i];
+
+            // if b is not marked already
+            if (!marked[b]) {
+
+                // enqueue b in queue
+                que.push(b);
+
+                // level of b is level of x + 1
+        levels[b] = levels[roots] + 1;
+        marked[b] = true;
+      }
+    }
+  }
+  return *std::max_element(levels,levels+numNode);
+}
 int selectRoot()
 {
     int root = -1;
@@ -341,14 +394,14 @@ int selectRoot()
     for (int i = 0; i < numQueryNode; ++i) {
         label = labelQuery[i];
         degree = degreeQuery[i];
-        
+
         int start = idxSortedData[label];
         int end = idxSortedData[label + 1];
         int mid = binaryLowerBound(start, end - 1, degree);
 
         int numInitCand = end - mid;
 
-        rank = numInitCand/(double)degree;
+        rank = (BFSdeepQuery[i]*numInitCand)/(double)degree;
 
         if( rank < rootRank ) {
             root = i;
@@ -402,14 +455,14 @@ void clearMemory()
         delete[] dagParentQuerySize;
     if(dagChildQuery != NULL) {
         for(int i = 0; i < numQueryNode; ++i) {
-            if(dagChildQuery[i] != NULL) 
+            if(dagChildQuery[i] != NULL)
                 delete[] dagChildQuery[i];
         }
         delete[] dagChildQuery;
     }
     if(dagParentQuery != NULL) {
         for(int i = 0; i < numQueryNode; ++i) {
-            if(dagParentQuery[i] != NULL) 
+            if(dagParentQuery[i] != NULL)
                 delete[] dagParentQuery[i];
         }
         delete[] dagParentQuery;

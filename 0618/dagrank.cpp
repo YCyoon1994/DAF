@@ -23,6 +23,7 @@ int* labelQuery = NULL;
 int* degreeQuery = NULL;
 int* adjListQuery = NULL;
 int* adjIndexQuery = NULL;
+int* rankQuery = NULL;
 
 //Variables for query DAG
 int** dagChildQuery = NULL; //dagChildQuery[i]: children of node i
@@ -85,8 +86,9 @@ void buildDAG()
 
     //BFS traversal using queue
     while(true) {
-        stable_sort(queue + currQueueStart, queue + currQueueEnd, sortByDegreeQuery);
-        stable_sort(queue + currQueueStart, queue + currQueueEnd, sortByLabelFreqQuery);
+        //stable_sort(queue + currQueueStart, queue + currQueueEnd, sortByDegreeQuery);
+        //stable_sort(queue + currQueueStart, queue + currQueueEnd, sortByLabelFreqQuery);
+        stable_sort(queue + currQueueStart, queue + currQueueEnd, sortByRankQuery);
         while( currQueueStart != currQueueEnd ) {
             int currNode = queue[ currQueueStart ];
             ++currQueueStart;
@@ -285,6 +287,11 @@ bool sortByLabelFreqQuery(int aNode1, int aNode2)
     return (labelFrequency[label1] < labelFrequency[label2]);
 }
 
+bool sortByRankQuery(int aNode1, int aNode2)
+{
+    return (rankQuery[aNode1] > rankQuery[aNode2]);
+}
+
 //read one query graph
 void readQueryGraph(ifstream& aInFile, int aSumDegree) 
 {
@@ -300,6 +307,8 @@ void readQueryGraph(ifstream& aInFile, int aSumDegree)
         adjListQuery = new int[aSumDegree];
         sumQueryDegree = aSumDegree;
     }
+    if( rankQuery == NULL)
+        rankQuery = new int[numQueryNode];
 
     //(re)allocate memory for adjacency list of query graph
     if( sumQueryDegree < aSumDegree ) {
@@ -341,14 +350,15 @@ int selectRoot()
     for (int i = 0; i < numQueryNode; ++i) {
         label = labelQuery[i];
         degree = degreeQuery[i];
-        
+         
         int start = idxSortedData[label];
         int end = idxSortedData[label + 1];
         int mid = binaryLowerBound(start, end - 1, degree);
 
         int numInitCand = end - mid;
 
-        rank = numInitCand/(double)degree;
+        rank = (numInitCand * numInitCand)/(double)(degree);
+        rankQuery[i] = rank;
 
         if( rank < rootRank ) {
             root = i;
@@ -390,6 +400,8 @@ void clearMemory()
         delete[] renamedLabel;
     if(labelQuery != NULL)
         delete[] labelQuery;
+    if(rankQuery != NULL)
+        delete[] rankQuery;
     if(degreeQuery != NULL)
         delete[] degreeQuery;
     if(adjListQuery != NULL)
